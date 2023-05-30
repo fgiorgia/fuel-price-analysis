@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "name": "prezzo_alle_8.csv",
+      "url": "https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv"
+    },
+    {
+      "name": "anagrafica_impianti_attivi.csv",
+      "url": "https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv"
+    }
+  ]
+}
