@@ -42,6 +42,7 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 
 [project.scripts]
 main = "fuel_price_analysis.main:main"
+data-sync = "fuel_price_analysis.data_sync.main:main"
 
 [tool.poe.tasks]
 test = "python -m pytest"
