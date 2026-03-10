@@ -1,5 +1,5 @@
 # Mock test
-from my_project.main import some_function
+from fuel_price_analysis.main import some_function
 
 
 def test_some_function():
