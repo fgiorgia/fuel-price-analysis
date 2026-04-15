@@ -22,6 +22,10 @@ load_dotenv()
 class HandledPyCloud(PyCloud):
 
     def get_auth_token(self):
+        # Pre-warm the TCP connection to ensure getdigest and userinfo
+        # reuse the same socket (and thus the same outbound IP behind NAT)
+        self.session.head(self.endpoint)
+
         last_error = None
         for attempt in range(1, __AUTH_MAX_RETRIES__ + 1):
             try:
