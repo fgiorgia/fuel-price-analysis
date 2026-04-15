@@ -18,6 +18,7 @@ class HandledPyCloud(PyCloud):
 
     def get_auth_token(self):
         """Override to log the raw pCloud response for debugging."""
+        import subprocess
         from hashlib import sha1
 
         digest = self.getdigest()
@@ -32,17 +33,30 @@ class HandledPyCloud(PyCloud):
             "passworddigest": passworddigest.hexdigest(),
             "authexpire": self.token_expire,
         }
-        resp = self._do_request("userinfo", authenticate=False, **params)
-        # --- DEBUG: log the keys pCloud returned (no secrets) ---
-        safe_keys = {k: v for k, v in resp.items() if k not in ("email", "auth")}
-        print(f"[DEBUG] pCloud userinfo response keys: {list(resp.keys())}")
+        # --- DEBUG: what changed between Apr 12 and Apr 13? ---
+        # 1. Runner external IP (did GitHub rotate to a blocked range?)
+        try:
+            ip = subprocess.run(
+                ["curl", "-s", "https://ifconfig.me"],
+                capture_output=True, text=True, timeout=5
+            ).stdout.strip()
+            print(f"[DEBUG] Runner external IP: {ip}")
+        except Exception as e:
+            print(f"[DEBUG] Could not get IP: {e}")
+        # 2. Is getdigest returning a valid nonce?
+        print(f"[DEBUG] digest nonce: {digest}")
+        # 3. HTTP response headers from pCloud (rate limiting, geo, etc.)
+        import requests as req
+        raw_resp = req.get(self.endpoint + "userinfo", params=params)
+        print(f"[DEBUG] HTTP status: {raw_resp.status_code}")
+        print(f"[DEBUG] Response headers: {dict(raw_resp.headers)}")
+        # --- END DEBUG ---
+        resp = raw_resp.json()
         print(f"[DEBUG] 'auth' present: {'auth' in resp}")
         print(f"[DEBUG] 'result': {resp.get('result')}")
-        print(f"[DEBUG] safe fields: {safe_keys}")
-        # --- END DEBUG ---
         if "auth" not in resp:
             raise Exception(
-                f"pCloud auth failed: 'auth' key missing from response. "
+                f"pCloud auth failed: 'auth' key missing. "
                 f"result={resp.get('result')}, keys={list(resp.keys())}"
             )
         return resp["auth"]
