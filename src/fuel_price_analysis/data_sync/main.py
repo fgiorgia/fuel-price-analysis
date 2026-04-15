@@ -1,7 +1,9 @@
 import os
 import json
+import time
 
 from pcloud import PyCloud
+from pcloud.api import AuthenticationError
 from dotenv import load_dotenv
 from urllib.request import urlopen
 from datetime import date
@@ -11,55 +13,31 @@ __DOWNLOAD_FILE_FOLDER_PATH__ = "./tmp"
 __REMOTE_FOLDER_BASE_PATH__ = "datasets"
 __REMOTE_FOLDER_PROJECT_PATH__ = "italy_gas_station_data"
 
+__AUTH_MAX_RETRIES__ = 3
+__AUTH_RETRY_DELAY_SECONDS__ = 5
+
 load_dotenv()
 
 
 class HandledPyCloud(PyCloud):
 
     def get_auth_token(self):
-        """Override to log the raw pCloud response for debugging."""
-        import subprocess
-        from hashlib import sha1
-
-        digest = self.getdigest()
-        passworddigest = sha1(
-            self.password + bytes(sha1(self.username).hexdigest(), "utf-8") + digest
-        )
-        params = {
-            "getauth": 1,
-            "logout": 1,
-            "username": self.username.decode("utf-8"),
-            "digest": digest.decode("utf-8"),
-            "passworddigest": passworddigest.hexdigest(),
-            "authexpire": self.token_expire,
-        }
-        # --- DEBUG: what changed between Apr 12 and Apr 13? ---
-        # 1. Runner external IP (did GitHub rotate to a blocked range?)
-        try:
-            ip = subprocess.run(
-                ["curl", "-s", "https://ifconfig.me"],
-                capture_output=True, text=True, timeout=5
-            ).stdout.strip()
-            print(f"[DEBUG] Runner external IP: {ip}")
-        except Exception as e:
-            print(f"[DEBUG] Could not get IP: {e}")
-        # 2. Is getdigest returning a valid nonce?
-        print(f"[DEBUG] digest nonce: {digest}")
-        # 3. HTTP response headers from pCloud (rate limiting, geo, etc.)
-        import requests as req
-        raw_resp = req.get(self.endpoint + "userinfo", params=params)
-        print(f"[DEBUG] HTTP status: {raw_resp.status_code}")
-        print(f"[DEBUG] Response headers: {dict(raw_resp.headers)}")
-        # --- END DEBUG ---
-        resp = raw_resp.json()
-        print(f"[DEBUG] 'auth' present: {'auth' in resp}")
-        print(f"[DEBUG] 'result': {resp.get('result')}")
-        if "auth" not in resp:
-            raise Exception(
-                f"pCloud auth failed: 'auth' key missing. "
-                f"result={resp.get('result')}, keys={list(resp.keys())}"
-            )
-        return resp["auth"]
+        last_error = None
+        for attempt in range(1, __AUTH_MAX_RETRIES__ + 1):
+            try:
+                return super().get_auth_token()
+            except AuthenticationError as e:
+                last_error = e
+                resp = e.args[0] if e.args else {}
+                print(
+                    f"pCloud auth attempt {attempt}/{__AUTH_MAX_RETRIES__} failed — "
+                    f"result={resp.get('result') if isinstance(resp, dict) else '?'}, "
+                    f"keys={list(resp.keys()) if isinstance(resp, dict) else '?'}"
+                )
+                if attempt < __AUTH_MAX_RETRIES__:
+                    print(f"Retrying in {__AUTH_RETRY_DELAY_SECONDS__}s...")
+                    time.sleep(__AUTH_RETRY_DELAY_SECONDS__)
+        raise last_error or AuthenticationError("All authentication attempts failed")
 
     def createhandledfolderifnotexists(self, parent_folder_id, folder_name):
         res = super().createfolderifnotexists(
