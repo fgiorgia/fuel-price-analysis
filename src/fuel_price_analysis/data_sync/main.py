@@ -16,6 +16,37 @@ load_dotenv()
 
 class HandledPyCloud(PyCloud):
 
+    def get_auth_token(self):
+        """Override to log the raw pCloud response for debugging."""
+        from hashlib import sha1
+
+        digest = self.getdigest()
+        passworddigest = sha1(
+            self.password + bytes(sha1(self.username).hexdigest(), "utf-8") + digest
+        )
+        params = {
+            "getauth": 1,
+            "logout": 1,
+            "username": self.username.decode("utf-8"),
+            "digest": digest.decode("utf-8"),
+            "passworddigest": passworddigest.hexdigest(),
+            "authexpire": self.token_expire,
+        }
+        resp = self._do_request("userinfo", authenticate=False, **params)
+        # --- DEBUG: log the keys pCloud returned (no secrets) ---
+        safe_keys = {k: v for k, v in resp.items() if k not in ("email", "auth")}
+        print(f"[DEBUG] pCloud userinfo response keys: {list(resp.keys())}")
+        print(f"[DEBUG] 'auth' present: {'auth' in resp}")
+        print(f"[DEBUG] 'result': {resp.get('result')}")
+        print(f"[DEBUG] safe fields: {safe_keys}")
+        # --- END DEBUG ---
+        if "auth" not in resp:
+            raise Exception(
+                f"pCloud auth failed: 'auth' key missing from response. "
+                f"result={resp.get('result')}, keys={list(resp.keys())}"
+            )
+        return resp["auth"]
+
     def createhandledfolderifnotexists(self, parent_folder_id, folder_name):
         res = super().createfolderifnotexists(
             folderid=parent_folder_id, name=folder_name
