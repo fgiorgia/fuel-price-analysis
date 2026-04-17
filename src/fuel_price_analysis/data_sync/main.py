@@ -15,6 +15,7 @@ __REMOTE_FOLDER_PROJECT_PATH__ = "italy_gas_station_data"
 
 __AUTH_MAX_RETRIES__ = 3
 __AUTH_RETRY_DELAY_SECONDS__ = 5
+__AUTH_DIGEST_REPLICATION_DELAY_SECONDS__ = 2
 
 load_dotenv()
 
@@ -22,14 +23,34 @@ load_dotenv()
 class HandledPyCloud(PyCloud):
 
     def get_auth_token(self):
-        # Pre-warm the TCP connection to ensure getdigest and userinfo
-        # reuse the same socket (and thus the same outbound IP behind NAT)
-        self.session.head(self.endpoint)
+        from hashlib import sha1
 
         last_error = None
         for attempt in range(1, __AUTH_MAX_RETRIES__ + 1):
             try:
-                return super().get_auth_token()
+                digest = self.getdigest()
+
+                # Allow pCloud's cluster to replicate the digest across nodes
+                # before sending the userinfo request that depends on it
+                time.sleep(__AUTH_DIGEST_REPLICATION_DELAY_SECONDS__)
+
+                passworddigest = sha1(
+                    self.password
+                    + bytes(sha1(self.username).hexdigest(), "utf-8")
+                    + digest
+                )
+                params = {
+                    "getauth": 1,
+                    "logout": 1,
+                    "username": self.username.decode("utf-8"),
+                    "digest": digest.decode("utf-8"),
+                    "passworddigest": passworddigest.hexdigest(),
+                    "authexpire": self.token_expire,
+                }
+                resp = self._do_request("userinfo", authenticate=False, **params)
+                if "auth" not in resp:
+                    raise AuthenticationError(resp)
+                return resp["auth"]
             except AuthenticationError as e:
                 last_error = e
                 resp = e.args[0] if e.args else {}
