@@ -9,7 +9,13 @@ requires-python = ">=3.13,<4.0"
 dependencies = []
 
 [dependency-groups]
-dev = ["poethepoet>=0.34.0", "pytest>=9.0", "black>=25.1.0", "pyright>=1.1.400"]
+dev = [
+    "poethepoet>=0.34.0",
+    "pytest>=9.0",
+    "black>=25.1.0",
+    "pyright>=1.1.400",
+    "agentic-tools",
+]
 sync-data = ["pcloud>=1.3", "python-dotenv>=1.0"]
 
 [build-system]
@@ -43,9 +49,14 @@ main = "fuel_price_analysis.main:main"
 data-sync = "fuel_price_analysis.data_sync.main:main"
 
 [tool.poe.tasks]
+upgrade-agentic-tools = "uv lock --upgrade-package agentic-tools"
+sync-skills = "uv run agentic-tools skills sync"
 test = "python -m pytest"
 lint = "python -m black --check ./src"
 lint-fix = "python -m black ./src"
 typecheck = "python -m pyright ./src"
 
 update-from-upstream = "python scripts/update_from_upstream.py"
+
+[tool.uv.sources]
+agentic-tools = { git = "https://github.com/swiftpostlabs/agentic-tools.git" }
