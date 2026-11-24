@@ -1,26 +1,33 @@
 name: Sync Daily Data
 
+# Downloads the MIMIT fuel-price CSVs and uploads them to pCloud with the EMAIL/PASSWORD secrets.
+# Only scheduled and manual runs: a push or a pull request must not upload data, and Dependabot or
+# fork PRs have no secrets.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   schedule:
-  # this string has quotes because '*' is a special character in YAML
-  - cron: '0 9 * * *'  # Every day at 9:00
+    # this string has quotes because '*' is a special character in YAML
+    - cron: '0 9 * * *' # Every day at 9:00 UTC
   workflow_dispatch:
+
+concurrency:
+  group: sync-data
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Install dependencies with uv
-        run: uv sync --group sync-data
+      - name: Install dependencies
+        run: uv sync --locked --group sync-data
 
       - name: Sync data
         env:
