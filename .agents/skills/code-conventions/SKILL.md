@@ -1,25 +1,24 @@
 ---
 name: code-conventions
-description: Conventions and workflows for this Python project template using Poetry, Black, Pyright (strict), and pytest, with a feature-first layout
+description: Conventions and workflows for this Python project using uv, Black, Pyright (strict), and pytest, with a feature-first layout
 ---
 
 # Project Conventions
 
 ## Purpose
 
-Help the agent work within this Python template in a way that respects my structure, typing rules, and tooling, so the template stays clean and reusable.
+Help the agent work within this project in a way that respects my structure, typing rules, and tooling, so the project stays clean.
 
 ## Project context
 
 - Language: Python (>=3.13,<4.0)
-- Package name: `my_project` (should be renamed by the user after initial setup)
-- Source layout: `src/my_project` (or according to what the user provides)
+- Source layout: `src/fuel_price_analysis` (or according to what the user provides)
 - Feature-first structure:
-  - `src/my_project/feat1/`
-  - `src/my_project/feat2/`
+  - `src/fuel_price_analysis/feat1/`
+  - `src/fuel_price_analysis/feat2/`
   - Each feature keeps its code and tests close together.
 - Tooling:
-  - Poetry for packaging and dependency management
+  - uv for dependencies and environments, hatchling for the build
   - Black for formatting
   - Pyright with strict type checking
   - pytest for testing
@@ -27,20 +26,20 @@ Help the agent work within this Python template in a way that respects my struct
 
 ## When to use this skill
 
-- Creating or updating features under `src/my_project/<feature_name>/`.
+- Creating or updating features under `src/fuel_price_analysis/<feature_name>/`.
 - Adding or updating tests for a feature.
 - Creating CLI entrypoints or tasks.
-- Adjusting project configuration related to Poetry, Pyright, Black, pytest, or Poe tasks.
+- Adjusting project configuration related to uv, Pyright, Black, pytest, or Poe tasks.
 
 ## Structure and file placement
 
 - Use a **feature-first** approach:
-  - Group related code under `src/my_project/<feature_name>/`.
+  - Group related code under `src/fuel_price_analysis/<feature_name>/`.
   - If a feature is self-contained, put its unit tests in the same feature folder, e.g.:
-    - `src/my_project/feature/feature.py`
-    - `src/my_project/feature/feature_test.py`
+    - `src/fuel_price_analysis/feature/feature.py`
+    - `src/fuel_price_analysis/feature/feature_test.py`
 - Example of a feature structure
-  - `src/my_project/feature/`
+  - `src/fuel_price_analysis/feature/`
     - `main.py`
     - `main_test.py`
     - `types.py` (optional, may contain additional types used in the feature)
@@ -53,7 +52,7 @@ Help the agent work within this Python template in a way that respects my struct
       - `entity_service.py`
       - `entity_service_test.py`
 
-- Do not create a separate top-level `tests` folder for this template.
+- Do not create a separate top-level `tests` folder in this project.
 - Keep module and test names descriptive and consistent.
 
 ## Additional utilities
@@ -88,10 +87,10 @@ Help the agent work within this Python template in a way that respects my struct
 - When a file is meant to be run from the command line:
   - Do **not** use the `if __name__ == "__main__":` pattern.
   - Instead, expose a clear function (e.g. `main()`) inside a module.
-  - Register this function in `[tool.poetry.scripts]` so it becomes a CLI entrypoint.
+  - Register this function in `[project.scripts]` so it becomes a CLI entrypoint.
 - If the script is not simple Python or better modeled as a task:
   - Add it under `[tool.poe.tasks]` with an appropriate name.
-  - Prefer Poe tasks for orchestration or shell-like commands, and Poetry scripts for Python entrypoints.
+  - Prefer Poe tasks for orchestration or shell-like commands, and [project.scripts] for installed Python entrypoints.
 
 ## Testing conventions
 
@@ -108,10 +107,10 @@ Help the agent work within this Python template in a way that respects my struct
 
 When proposing changes, the agent should keep these commands in mind:
 
-- `poetry run poe test` → run pytest tests.
-- `poetry run poe lint` → run Black in check mode.
-- `poetry run poe lint-fix` → format code with Black.
-- `poetry run poe typecheck` → run Pyright on `./src`.
+- `uv run poe test` → run pytest tests.
+- `uv run poe lint` → run Black in check mode.
+- `uv run poe lint-fix` → format code with Black.
+- `uv run poe typecheck` → run Pyright on `./src`.
 
 ## General guidance for the agent
 

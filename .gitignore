@@ -172,3 +172,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Local agent workspaces (tasks, retro, playground, synced sources)
+/.agents/local/
